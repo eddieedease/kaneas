@@ -22,19 +22,25 @@ npm --prefix frontend install
 npm start                          # Angular dev server on http://localhost:4200
 ```
 
-First time only: open <http://localhost:8080/install/> and run the installer (the database fields are prefilled for Docker). It creates the tables, the admin account and `backend/api/config/config.php`.
+The PHP container installs Kaneas automatically when the database is empty (first start, or after `docker compose down -v`): tables, `backend/api/config/config.php` and these dev accounts (set in `docker-compose.yml`):
+
+| Role  | Email               | Password   |
+|-------|---------------------|------------|
+| admin | `admin@example.com` | `password` |
+| user  | `user@example.com`  | `password` |
 
 | Service    | URL                            |
 |------------|--------------------------------|
 | App        | http://localhost:4200          |
 | API        | http://localhost:4200/api (proxied to :8080) |
-| Installer  | http://localhost:8080/install/ |
 | phpMyAdmin | http://localhost:8081 (`root` / `root`) |
 | MySQL      | `localhost:3307` (`kaneas` / `kaneas`) |
 
 The Angular dev server proxies `/api` to Docker (`frontend/proxy.conf.json`), so the app and API share one origin — exactly like production. No CORS is needed or enabled.
 
-**Reset the dev install:** `docker compose down -v`, delete `backend/api/config/config.php` and `backend/install/.htaccess`, then start Docker and run the installer again.
+**Reset the dev database:** `docker compose down -v && npm run docker:up` — it reinstalls itself with the dev accounts.
+
+The auto install (`backend/install/cli.php`) is development only; production installs always go through the web installer.
 
 ## Build & deploy to shared hosting
 
