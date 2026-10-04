@@ -11,7 +11,7 @@ import { LanguageSwitcher } from './language-switcher';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <header class="border-b border-slate-200 bg-white">
-      <nav class="mx-auto flex h-14 max-w-7xl items-center gap-6 px-4">
+      <nav class="flex h-14 items-center gap-6 px-4">
         <a routerLink="/boards" class="text-lg font-bold tracking-tight">{{ 'app.name' | translate }}</a>
         <div class="flex items-center gap-1 text-sm">
           <a routerLink="/boards" routerLinkActive="bg-slate-100 text-slate-900" class="rounded px-3 py-1.5 text-slate-600 hover:text-slate-900">
@@ -33,7 +33,8 @@ import { LanguageSwitcher } from './language-switcher';
         </div>
       </nav>
     </header>
-    <main class="mx-auto max-w-7xl px-4 py-6">
+    <!-- Full width so boards can use the whole screen; other pages constrain themselves. -->
+    <main class="px-4 py-6">
       <router-outlet />
     </main>
   `,

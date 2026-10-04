@@ -52,7 +52,9 @@
     "deleteCard": "Kaart verwijderen",
     "readOnly": "Je hebt alleen leesrechten op dit bord.",
     "add": "Toevoegen",
-    "cancel": "Annuleren"
+    "cancel": "Annuleren",
+    "options": "Bordopties",
+    "close": "Sluiten"
   },
   "members": {
     "title": "Leden",

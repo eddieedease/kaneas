@@ -23,6 +23,7 @@ interface MailFormModel {
   selector: 'app-admin-settings-page',
   imports: [FormField, TranslatePipe, FieldErrors],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { class: 'mx-auto block max-w-7xl' },
   template: `
     <h1 class="mb-6 text-2xl font-bold">{{ 'admin.settingsTitle' | translate }}</h1>
 

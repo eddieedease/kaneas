@@ -52,7 +52,9 @@
     "deleteCard": "Delete card",
     "readOnly": "You have read-only access to this board.",
     "add": "Add",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "options": "Board options",
+    "close": "Close"
   },
   "members": {
     "title": "Members",

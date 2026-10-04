@@ -12,6 +12,7 @@ import { BoardsApi } from './boards.api';
   selector: 'app-board-list-page',
   imports: [FormField, RouterLink, TranslatePipe, FieldErrors],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { class: 'mx-auto block max-w-7xl' },
   template: `
     <div class="mb-6 flex items-center justify-between">
       <h1 class="text-2xl font-bold">{{ 'boards.title' | translate }}</h1>

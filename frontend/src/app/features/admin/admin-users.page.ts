@@ -7,12 +7,14 @@ import { TranslatedError, apiError } from '../../core/api/api-error';
 import { AuthService } from '../../core/auth/auth.service';
 import { AdminUser, SystemRole } from '../../core/models';
 import { LanguageService } from '../../core/i18n/language.service';
+import { UtcDatePipe } from '../../shared/utc-date.pipe';
 import { AdminApi } from './admin.api';
 
 @Component({
   selector: 'app-admin-users-page',
-  imports: [TranslatePipe, DatePipe],
+  imports: [TranslatePipe, DatePipe, UtcDatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { class: 'mx-auto block max-w-7xl' },
   template: `
     <h1 class="mb-6 text-2xl font-bold">{{ 'admin.usersTitle' | translate }}</h1>
 
@@ -56,7 +58,7 @@ import { AdminApi } from './admin.api';
                 </span>
               </td>
               <td class="px-4 py-3">{{ user.board_count }}</td>
-              <td class="px-4 py-3 text-slate-600">{{ user.last_login_at ? (user.last_login_at + 'Z' | date: 'short' : undefined : language.current()) : '—' }}</td>
+              <td class="px-4 py-3 text-slate-600">{{ (user.last_login_at | utcDate | date: 'short' : undefined : language.current()) ?? '—' }}</td>
               <td class="px-4 py-3 text-right whitespace-nowrap">
                 @if (!isMe) {
                   <button type="button" class="text-blue-600 hover:underline" (click)="toggleActive(user)">
