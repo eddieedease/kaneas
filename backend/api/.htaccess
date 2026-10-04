@@ -1,0 +1,14 @@
+# Kaneas API front controller
+Options -Indexes
+DirectoryIndex index.php
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    # Expose the Authorization header to PHP (stripped by some CGI/FastCGI setups)
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # Everything goes through index.php
+    RewriteCond %{REQUEST_URI} !/index\.php$
+    RewriteRule ^ index.php [QSA,L]
+</IfModule>

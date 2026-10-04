@@ -1,0 +1,19 @@
+# Dependencies & build output
+node_modules/
+dist/
+
+# Secrets written by the web installer
+backend/api/config/config.php
+backend/api/config/*.tmp
+# Lock file the installer writes after a successful install
+backend/install/.htaccess
+
+# Local notes / credentials
+*.local.md
+.env
+.env.*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/

@@ -1,0 +1,63 @@
+name: kaneas
+
+services:
+  php:
+    build: ./docker/php
+    ports:
+      - "8080:80"
+    volumes:
+      - ./backend:/var/www/html
+    environment:
+      # Only used to prefill the web installer during development.
+      KANEAS_DEV_DB_HOST: db
+      KANEAS_DEV_DB_PORT: "3306"
+      KANEAS_DEV_DB_NAME: kaneas
+      KANEAS_DEV_DB_USER: kaneas
+      KANEAS_DEV_DB_PASS: kaneas
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # Serves the deployable build (npm run build) from a sub folder, like shared hosting:
+  #   docker compose --profile release up -d  ->  http://localhost:8090/kanban/install/
+  release:
+    profiles: ["release"]
+    build: ./docker/php
+    ports:
+      - "8090:80"
+    volumes:
+      - ./dist/kaneas:/var/www/html/kanban
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: kaneas
+      MYSQL_USER: kaneas
+      MYSQL_PASSWORD: kaneas
+    command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
+    ports:
+      - "3307:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  phpmyadmin:
+    image: phpmyadmin:5
+    ports:
+      - "8081:80"
+    environment:
+      PMA_HOST: db
+      UPLOAD_LIMIT: 64M
+    depends_on:
+      - db
+
+volumes:
+  db_data:

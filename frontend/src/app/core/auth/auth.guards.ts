@@ -1,0 +1,17 @@
+import { inject } from '@angular/core';
+import { CanActivateFn, Router } from '@angular/router';
+import { AuthService } from './auth.service';
+
+export const authGuard: CanActivateFn = (_route, state) => {
+  const auth = inject(AuthService);
+  return auth.isLoggedIn() || inject(Router).createUrlTree(['/login'], { queryParams: { returnUrl: state.url } });
+};
+
+export const guestGuard: CanActivateFn = () => {
+  return !inject(AuthService).isLoggedIn() || inject(Router).createUrlTree(['/boards']);
+};
+
+/** UI convenience only — the API enforces the admin role on every admin endpoint. */
+export const adminGuard: CanActivateFn = () => {
+  return inject(AuthService).isAdmin() || inject(Router).createUrlTree(['/boards']);
+};
