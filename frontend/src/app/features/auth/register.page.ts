@@ -8,10 +8,11 @@ import { TranslatedError, apiError, apiFieldErrors } from '../../core/api/api-er
 import { AuthService } from '../../core/auth/auth.service';
 import { LanguageService } from '../../core/i18n/language.service';
 import { FieldErrors } from '../../shared/field-errors';
+import { ResendVerification } from './resend-verification';
 
 @Component({
   selector: 'app-register-page',
-  imports: [FormField, RouterLink, TranslatePipe, FieldErrors],
+  imports: [FormField, RouterLink, TranslatePipe, FieldErrors, ResendVerification],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (config.value()?.allow_registration === false) {
@@ -19,6 +20,13 @@ import { FieldErrors } from '../../shared/field-errors';
         <h2 class="text-lg font-semibold">{{ 'auth.registerTitle' | translate }}</h2>
         <p class="text-sm text-slate-600">{{ 'auth.registrationDisabled' | translate }}</p>
         <a routerLink="/login" class="btn btn-secondary w-full">{{ 'auth.login' | translate }}</a>
+      </div>
+    } @else if (pendingEmail(); as email) {
+      <div class="card space-y-4" role="status">
+        <h2 class="text-lg font-semibold">{{ 'verify.checkInbox' | translate }}</h2>
+        <p class="text-sm text-slate-600">{{ 'verify.sentTo' | translate: { email } }}</p>
+        <app-resend-verification [email]="email" />
+        <a routerLink="/login" class="block text-center text-sm font-medium text-blue-600 hover:underline">{{ 'auth.login' | translate }}</a>
       </div>
     } @else {
       <form class="card space-y-4" (submit)="onSubmit($event)" novalidate>
@@ -79,14 +87,20 @@ export class RegisterPage {
     minLength(path.password, 8);
   });
   protected readonly error = signal<TranslatedError | null>(null);
+  /** Set after registering when the account still has to be verified by email. */
+  protected readonly pendingEmail = signal<string | null>(null);
 
   protected async onSubmit(event: Event): Promise<void> {
     event.preventDefault();
     this.error.set(null);
     await submit(this.registerForm, async (form) => {
       try {
-        await this.auth.register({ ...this.model(), locale: this.language.current() });
-        await this.router.navigateByUrl('/boards');
+        const result = await this.auth.register({ ...this.model(), locale: this.language.current() });
+        if ('verification_required' in result) {
+          this.pendingEmail.set(result.email);
+        } else {
+          await this.router.navigateByUrl('/boards');
+        }
         return undefined;
       } catch (err) {
         // Map server side field errors (e.g. email taken) onto the form fields.

@@ -111,7 +111,12 @@
     "save": "Opslaan",
     "saved": "Opgeslagen.",
     "sendTest": "Testmail versturen",
-    "testSent": "Testmail verstuurd naar {{to}}."
+    "testSent": "Testmail verstuurd naar {{to}}.",
+    "unverified": "Niet bevestigd",
+    "verify": "Bevestigen",
+    "requireVerification": "Nieuwe accounts moeten hun e-mailadres bevestigen",
+    "requireVerificationHelp": "Na registratie wordt een bevestigingslink gemaild. Inloggen kan pas na het bevestigen.",
+    "requireVerificationNoMail": "Wordt pas actief zodra e-mail hieronder is ingesteld en ingeschakeld."
   },
   "validation": {
     "required": "Dit veld is verplicht.",
@@ -143,6 +148,18 @@
     "cannot_demote_self": "Je kunt je eigen beheerdersaccount niet wijzigen of verwijderen.",
     "mail_not_configured": "Vul eerst de SMTP-server en het afzenderadres in.",
     "mail_failed": "Versturen mislukt: {{message}}",
-    "unknown": "Er ging iets mis."
+    "unknown": "Er ging iets mis.",
+    "email_not_verified": "Je e-mailadres is nog niet bevestigd. Klik op de link in de bevestigingsmail.",
+    "verification_invalid": "Deze bevestigingslink is ongeldig of verlopen.",
+    "maintenance": "Kaneas wordt bijgewerkt. Probeer het zo opnieuw."
+  },
+  "verify": {
+    "title": "E-mailadres bevestigen",
+    "checking": "Je e-mailadres wordt bevestigd…",
+    "checkInbox": "Bevestig je e-mailadres",
+    "sentTo": "We hebben een bevestigingslink gestuurd naar {{email}}. Klik op de link in de e-mail om je account te activeren. De link is 24 uur geldig.",
+    "resend": "Bevestigingsmail opnieuw versturen",
+    "resent": "Als dit adres op een bevestiging wacht, is er een nieuwe e-mail verstuurd.",
+    "invalidHelp": "Vraag een nieuwe bevestigingsmail aan door in te loggen."
   }
 }

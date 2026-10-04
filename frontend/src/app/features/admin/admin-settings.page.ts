@@ -6,7 +6,7 @@ import { firstValueFrom } from 'rxjs';
 import { TranslatedError, apiError } from '../../core/api/api-error';
 import { MailEncryption } from '../../core/models';
 import { FieldErrors } from '../../shared/field-errors';
-import { AdminApi } from './admin.api';
+import { AdminApi, AppSettings } from './admin.api';
 
 interface MailFormModel {
   enabled: boolean;
@@ -35,6 +35,20 @@ interface MailFormModel {
             <input type="checkbox" class="size-4" [checked]="s.allow_registration" (change)="setRegistration($any($event.target).checked)" />
             {{ 'admin.allowRegistration' | translate }}
           </label>
+          <div>
+            <label class="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                class="size-4"
+                [checked]="s.require_email_verification"
+                (change)="updateSetting({ require_email_verification: $any($event.target).checked })"
+              />
+              {{ 'admin.requireVerification' | translate }}
+            </label>
+            <p class="mt-1 ml-6 text-xs" [class]="s.require_email_verification && !s.mail_configured ? 'text-amber-700' : 'text-slate-500'">
+              {{ (s.mail_configured ? 'admin.requireVerificationHelp' : 'admin.requireVerificationNoMail') | translate }}
+            </p>
+          </div>
         }
       </section>
 
@@ -154,8 +168,12 @@ export class AdminSettingsPage {
     });
   }
 
-  protected async setRegistration(allow: boolean): Promise<void> {
-    await firstValueFrom(this.api.updateSettings({ allow_registration: allow }));
+  protected setRegistration(allow: boolean): Promise<void> {
+    return this.updateSetting({ allow_registration: allow });
+  }
+
+  protected async updateSetting(patch: Partial<Omit<AppSettings, 'mail_configured'>>): Promise<void> {
+    await firstValueFrom(this.api.updateSettings(patch));
     this.settings.reload();
   }
 
@@ -170,6 +188,7 @@ export class AdminSettingsPage {
         await firstValueFrom(this.api.updateMailSettings({ ...rest, password: password === '' ? null : password }));
         this.mailNotice.set({ key: 'admin.saved' });
         this.mail.reload();
+        this.settings.reload();
       } catch (err) {
         this.mailError.set(apiError(err));
       }

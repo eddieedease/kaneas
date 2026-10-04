@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kaneas\Install;
 
 use Kaneas\Core\Database;
+use Kaneas\Core\Migrator;
 use Kaneas\Services\Passwords;
 use Kaneas\Services\Settings;
 use PDO;
@@ -57,12 +58,8 @@ final class Installer
         }
         $db = new Database($pdo, $dbConfig['prefix']);
 
-        $schema = str_replace('{prefix}', $dbConfig['prefix'], (string) file_get_contents(__DIR__ . '/schema.sql'));
-        $statements = array_filter(
-            array_map('trim', preg_split('/;\s*$/m', $schema)),
-            static fn ($s) => preg_match('/\S/', (string) preg_replace('/^--.*$/m', '', $s)),
-        );
-        preg_match_all('/CREATE TABLE `([^`]+)`/', $schema, $m);
+        $statements = Migrator::statements((string) file_get_contents(__DIR__ . '/schema.sql'), prefix: $dbConfig['prefix']);
+        preg_match_all('/CREATE TABLE `([^`]+)`/', implode("\n", $statements), $m);
         $createdTables = $m[1];
 
         $appKey = base64_encode(random_bytes(32));
@@ -80,7 +77,8 @@ final class Installer
             $users = [['role' => 'admin'] + $options['admin'], ...($options['users'] ?? [])];
             foreach ($users as $user) {
                 $db->query(
-                    'INSERT INTO {users} (email, name, password_hash, role, locale) VALUES (?, ?, ?, ?, ?)',
+                    'INSERT INTO {users} (email, name, password_hash, role, locale, email_verified_at)
+                     VALUES (?, ?, ?, ?, ?, UTC_TIMESTAMP())',
                     [strtolower($user['email']), $user['name'], Passwords::hash($user['password']), $user['role'], $user['locale']],
                 );
             }

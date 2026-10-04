@@ -9,6 +9,7 @@ use Kaneas\Core\HttpException;
 use Kaneas\Core\Request;
 use Kaneas\Core\Response;
 use Kaneas\Core\Validator;
+use Kaneas\Services\EmailVerification;
 use Kaneas\Services\Passwords;
 use Kaneas\Services\RateLimiter;
 use Kaneas\Services\Settings;
@@ -21,7 +22,10 @@ final class AuthController
     /** Public app config the SPA needs before login. */
     public function config(Request $request): array
     {
-        return ['allow_registration' => Settings::allowRegistration()];
+        return [
+            'allow_registration' => Settings::allowRegistration(),
+            'email_verification' => EmailVerification::isRequired(),
+        ];
     }
 
     public function register(Request $request): Response
@@ -39,30 +43,65 @@ final class AuthController
             'locale' => self::LOCALES,
         ]);
         $email = strtolower($data['email']);
+        $verify = EmailVerification::isRequired();
         $db = Database::get();
 
-        $user = $db->transaction(static function (Database $db) use ($data, $email): array {
+        $user = $db->transaction(static function (Database $db) use ($data, $email, $verify): array {
             if ($db->value('SELECT id FROM {users} WHERE email = ?', [$email]) !== null) {
                 throw HttpException::validation(['email' => 'taken']);
             }
             $id = $db->insert(
-                'INSERT INTO {users} (email, name, password_hash, role, locale, last_login_at)
-                 VALUES (?, ?, ?, ?, ?, UTC_TIMESTAMP())',
+                'INSERT INTO {users} (email, name, password_hash, role, locale) VALUES (?, ?, ?, ?, ?)',
                 [$email, $data['name'], Passwords::hash($data['password']), 'user', $data['locale'] ?? 'nl'],
             );
-
-            // Turn pending board invitations for this email into memberships.
-            $db->query(
-                'INSERT IGNORE INTO {board_members} (board_id, user_id, role)
-                 SELECT board_id, ?, role FROM {board_invitations} WHERE email = ?',
-                [$id, $email],
-            );
-            $db->query('DELETE FROM {board_invitations} WHERE email = ?', [$email]);
-
+            if (!$verify) {
+                EmailVerification::acceptInvitations($db, $id, $email);
+            }
             return $db->one('SELECT id, email, name, role, locale FROM {users} WHERE id = ?', [$id]);
         });
 
+        if ($verify) {
+            // No session yet: the account is activated through the emailed link.
+            EmailVerification::send($user);
+            return Response::created(['verification_required' => true, 'email' => $email]);
+        }
+
+        $db->query('UPDATE {users} SET last_login_at = UTC_TIMESTAMP() WHERE id = ?', [$user['id']]);
         return Response::created(TokenService::startSession($user, $request));
+    }
+
+    /** Body: { "token": "..." } from the emailed link. Verifies and signs the user in. */
+    public function verifyEmail(Request $request): array
+    {
+        RateLimiter::ensure('verify:' . $request->ip(), 20, 3600);
+        RateLimiter::hit('verify:' . $request->ip());
+        $data = Validator::validate($request->all(), ['token' => 'required|string|max:200']);
+
+        $user = EmailVerification::consume($data['token']);
+        Database::get()->query('UPDATE {users} SET last_login_at = UTC_TIMESTAMP() WHERE id = ?', [$user['id']]);
+        return TokenService::startSession($user, $request);
+    }
+
+    /** Body: { "email": "..." }. Always 204, so it doesn't reveal which addresses exist. */
+    public function resendVerification(Request $request): Response
+    {
+        $data = Validator::validate($request->all(), ['email' => 'required|email']);
+        $email = strtolower($data['email']);
+        RateLimiter::ensure('resend-ip:' . $request->ip(), 10, 3600);
+        RateLimiter::ensure('resend:' . $email, 3, 3600);
+        RateLimiter::hit('resend-ip:' . $request->ip());
+        RateLimiter::hit('resend:' . $email);
+
+        if (EmailVerification::isRequired()) {
+            $user = Database::get()->one(
+                'SELECT id, email, name, locale FROM {users} WHERE email = ? AND is_active = 1 AND email_verified_at IS NULL',
+                [$email],
+            );
+            if ($user !== null) {
+                EmailVerification::send($user);
+            }
+        }
+        return Response::noContent();
     }
 
     public function login(Request $request): array
@@ -80,7 +119,7 @@ final class AuthController
 
         $db = Database::get();
         $user = $db->one(
-            'SELECT id, email, name, role, locale, is_active, password_hash FROM {users} WHERE email = ?',
+            'SELECT id, email, name, role, locale, is_active, email_verified_at, password_hash FROM {users} WHERE email = ?',
             [$email],
         );
 
@@ -91,6 +130,10 @@ final class AuthController
         }
         if (!$user['is_active']) {
             throw new HttpException(403, 'account_disabled');
+        }
+        // Checked after the password, so it doesn't reveal which addresses are registered.
+        if ($user['email_verified_at'] === null && EmailVerification::isRequired()) {
+            throw new HttpException(403, 'email_not_verified');
         }
 
         RateLimiter::clear($pairBucket);

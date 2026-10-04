@@ -3,7 +3,7 @@ import { DestroyRef, Injectable, computed, inject, signal } from '@angular/core'
 import { Router } from '@angular/router';
 import { Observable, catchError, finalize, firstValueFrom, map, of, shareReplay, tap } from 'rxjs';
 import { LanguageService } from '../i18n/language.service';
-import { Locale, SessionResponse, User } from '../models';
+import { Locale, SessionResponse, User, VerificationPending } from '../models';
 
 export interface LoginRequest {
   email: string;
@@ -54,9 +54,21 @@ export class AuthService {
     return this.startSession(session);
   }
 
-  async register(data: RegisterRequest): Promise<User> {
-    const session = await firstValueFrom(this.http.post<SessionResponse>('api/auth/register', data));
+  /** Returns the user when signed in right away, or the pending state when the email must be verified first. */
+  async register(data: RegisterRequest): Promise<User | VerificationPending> {
+    const result = await firstValueFrom(this.http.post<SessionResponse | VerificationPending>('api/auth/register', data));
+    return 'verification_required' in result ? result : this.startSession(result);
+  }
+
+  /** Exchanges the token from the verification email for a session. */
+  async verifyEmail(token: string): Promise<User> {
+    const session = await firstValueFrom(this.http.post<SessionResponse>('api/auth/verify-email', { token }));
     return this.startSession(session);
+  }
+
+  /** Sends a new verification link. The API answers the same for unknown addresses. */
+  async resendVerification(email: string): Promise<void> {
+    await firstValueFrom(this.http.post('api/auth/resend-verification', { email }));
   }
 
   async logout(): Promise<void> {

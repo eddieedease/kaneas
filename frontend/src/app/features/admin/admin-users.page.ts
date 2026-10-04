@@ -56,10 +56,16 @@ import { AdminApi } from './admin.api';
                 <span class="rounded-full px-2 py-0.5 text-xs" [class]="user.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'">
                   {{ (user.is_active ? 'admin.active' : 'admin.inactive') | translate }}
                 </span>
+                @if (!user.email_verified_at) {
+                  <span class="ml-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800">{{ 'admin.unverified' | translate }}</span>
+                }
               </td>
               <td class="px-4 py-3">{{ user.board_count }}</td>
               <td class="px-4 py-3 text-slate-600">{{ (user.last_login_at | utcDate | date: 'short' : undefined : language.current()) ?? '—' }}</td>
               <td class="px-4 py-3 text-right whitespace-nowrap">
+                @if (!user.email_verified_at) {
+                  <button type="button" class="mr-3 text-blue-600 hover:underline" (click)="verify(user)">{{ 'admin.verify' | translate }}</button>
+                }
                 @if (!isMe) {
                   <button type="button" class="text-blue-600 hover:underline" (click)="toggleActive(user)">
                     {{ (user.is_active ? 'admin.deactivate' : 'admin.activate') | translate }}
@@ -85,6 +91,11 @@ export class AdminUsersPage {
 
   protected setRole(user: AdminUser, role: SystemRole): Promise<void> {
     return this.run(this.api.updateUser(user.id, { role }));
+  }
+
+  /** Marks the email as verified manually (e.g. when the user can't receive mail). */
+  protected verify(user: AdminUser): Promise<void> {
+    return this.run(this.api.updateUser(user.id, { email_verified: true }));
   }
 
   protected toggleActive(user: AdminUser): Promise<void> {

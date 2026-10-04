@@ -5,6 +5,9 @@ import { AdminUser, MailSettings, SystemRole } from '../../core/models';
 
 export interface AppSettings {
   allow_registration: boolean;
+  require_email_verification: boolean;
+  /** Read only: verification is only enforced when mail is configured. */
+  readonly mail_configured: boolean;
 }
 
 /** Mail settings update; omit `password` (or null) to keep the stored password. */
@@ -18,7 +21,7 @@ export class AdminApi {
     return this.http.get<AdminUser[]>('api/admin/users');
   }
 
-  updateUser(id: number, data: { role?: SystemRole; is_active?: boolean }): Observable<AdminUser> {
+  updateUser(id: number, data: { role?: SystemRole; is_active?: boolean; email_verified?: true }): Observable<AdminUser> {
     return this.http.patch<AdminUser>(`api/admin/users/${id}`, data);
   }
 
@@ -30,7 +33,7 @@ export class AdminApi {
     return this.http.get<AppSettings>('api/admin/settings');
   }
 
-  updateSettings(data: Partial<AppSettings>): Observable<AppSettings> {
+  updateSettings(data: Partial<Omit<AppSettings, 'mail_configured'>>): Observable<AppSettings> {
     return this.http.patch<AppSettings>('api/admin/settings', data);
   }
 

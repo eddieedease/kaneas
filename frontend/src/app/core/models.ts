@@ -17,6 +17,12 @@ export interface SessionResponse {
   user: User;
 }
 
+/** Registration while email verification is on: no session until the link is clicked. */
+export interface VerificationPending {
+  verification_required: true;
+  email: string;
+}
+
 export interface BoardSummary {
   id: number;
   name: string;
@@ -83,6 +89,7 @@ export interface AdminUser {
   role: SystemRole;
   locale: Locale;
   is_active: number;
+  email_verified_at: string | null;
   last_login_at: string | null;
   created_at: string;
   board_count: number;

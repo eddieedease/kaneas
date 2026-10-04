@@ -16,6 +16,7 @@ CREATE TABLE `{prefix}users` (
   `role` ENUM('user','admin') NOT NULL DEFAULT 'user',
   `locale` VARCHAR(5) NOT NULL DEFAULT 'nl',
   `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+  `email_verified_at` DATETIME NULL,
   `last_login_at` DATETIME NULL,
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -38,6 +39,20 @@ CREATE TABLE `{prefix}refresh_tokens` (
   KEY `idx_refresh_family` (`family_id`),
   KEY `idx_refresh_user` (`user_id`),
   CONSTRAINT `fk_{prefix}refresh_user` FOREIGN KEY (`user_id`) REFERENCES `{prefix}users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `{prefix}user_tokens` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user_id` INT UNSIGNED NOT NULL,
+  `purpose` VARCHAR(32) NOT NULL,
+  `token_hash` CHAR(64) NOT NULL,
+  `expires_at` DATETIME NOT NULL,
+  `used_at` DATETIME NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_user_token_hash` (`token_hash`),
+  KEY `idx_user_tokens_user` (`user_id`, `purpose`),
+  CONSTRAINT `fk_{prefix}user_tokens_user` FOREIGN KEY (`user_id`) REFERENCES `{prefix}users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `{prefix}rate_limits` (

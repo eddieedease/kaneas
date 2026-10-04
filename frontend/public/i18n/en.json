@@ -111,7 +111,12 @@
     "save": "Save",
     "saved": "Saved.",
     "sendTest": "Send test mail",
-    "testSent": "Test mail sent to {{to}}."
+    "testSent": "Test mail sent to {{to}}.",
+    "unverified": "Unverified",
+    "verify": "Verify",
+    "requireVerification": "New accounts must confirm their email address",
+    "requireVerificationHelp": "After signing up, users receive a confirmation link and can only log in after clicking it.",
+    "requireVerificationNoMail": "Only takes effect once email is configured and enabled below."
   },
   "validation": {
     "required": "This field is required.",
@@ -143,6 +148,18 @@
     "cannot_demote_self": "You can't change or delete your own admin account.",
     "mail_not_configured": "Fill in the SMTP server and from address first.",
     "mail_failed": "Sending failed: {{message}}",
-    "unknown": "Something went wrong."
+    "unknown": "Something went wrong.",
+    "email_not_verified": "Your email address has not been confirmed yet. Click the link in the confirmation email.",
+    "verification_invalid": "This confirmation link is invalid or has expired.",
+    "maintenance": "Kaneas is being updated. Please try again shortly."
+  },
+  "verify": {
+    "title": "Confirm email address",
+    "checking": "Confirming your email address…",
+    "checkInbox": "Confirm your email address",
+    "sentTo": "We sent a confirmation link to {{email}}. Click the link in the email to activate your account. The link is valid for 24 hours.",
+    "resend": "Send confirmation email again",
+    "resent": "If this address is waiting for confirmation, a new email has been sent.",
+    "invalidHelp": "Log in to request a new confirmation email."
   }
 }

@@ -48,6 +48,12 @@ final class Settings
         return (bool) self::get('allow_registration', true);
     }
 
+    /** Admin preference; only enforced when mail is configured (see EmailVerification::isRequired). */
+    public static function requireEmailVerification(): bool
+    {
+        return (bool) self::get('require_email_verification', true);
+    }
+
     /** Mail settings with the password decrypted. */
     public static function mail(?Database $db = null, ?string $appKey = null): array
     {

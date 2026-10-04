@@ -19,6 +19,9 @@ services:
       KANEAS_DEV_USER_EMAIL: user@example.com
       KANEAS_DEV_USER_PASSWORD: password
       KANEAS_DEV_APP_URL: http://localhost:4200/
+      # All dev mail goes to Mailpit: http://localhost:8025
+      KANEAS_DEV_MAIL_HOST: mailpit
+      KANEAS_DEV_MAIL_PORT: "1025"
       KANEAS_DEV_DB_PREFIX: kb_
       KANEAS_DEV_DB_HOST: db
       KANEAS_DEV_DB_PORT: "3306"
@@ -28,6 +31,14 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      mailpit:
+        condition: service_started
+
+  # Catches all outgoing mail in development: http://localhost:8025
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "8025:8025"
 
   # Serves the deployable build (npm run build) from a sub folder, like shared hosting:
   #   docker compose --profile release up -d  ->  http://localhost:8090/kanban/install/

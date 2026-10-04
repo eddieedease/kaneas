@@ -33,6 +33,7 @@ The PHP container installs Kaneas automatically when the database is empty (firs
 |------------|--------------------------------|
 | App        | http://localhost:4200          |
 | API        | http://localhost:4200/api (proxied to :8080) |
+| Mailpit    | http://localhost:8025 — catches all mail sent in development |
 | phpMyAdmin | http://localhost:8081 (`root` / `root`) |
 | MySQL      | `localhost:3307` (`kaneas` / `kaneas`) |
 
@@ -40,7 +41,7 @@ The Angular dev server proxies `/api` to Docker (`frontend/proxy.conf.json`), so
 
 **Reset the dev database:** `docker compose down -v && npm run docker:up` — it reinstalls itself with the dev accounts.
 
-The auto install (`backend/install/cli.php`) is development only; production installs always go through the web installer.
+The auto install (`backend/install/cli.php`) is development only; production installs always go through the web installer. It also points mail at Mailpit, so registration (email verification) and invitations send real mails you can open at http://localhost:8025.
 
 ## Build & deploy to shared hosting
 
@@ -71,6 +72,8 @@ npm run build
 docker compose --profile release up -d    # http://localhost:8090/kanban/install/
 ```
 
+**Updating** an existing installation: upload the new build over the old one, but keep `api/config/config.php` and skip (or delete) `install/`. Database changes in `api/migrations/` run automatically on the first request after the upload.
+
 Requirements on the host: Apache with `mod_rewrite` and `.htaccess` (`AllowOverride All`), PHP ≥ 8.2 with `pdo_mysql`, `openssl`, `mbstring`, MySQL 5.7+/MariaDB 10.3+.
 
 ## Roles
@@ -84,6 +87,15 @@ Requirements on the host: Apache with `mod_rewrite` and `.htaccess` (`AllowOverr
 | Board  | `viewer` | read only |
 
 Adding a person by email adds existing users immediately. For an unknown email a pending invitation is stored; it becomes a membership when that person registers. If SMTP is configured, an email is sent in both cases.
+
+## Email verification
+
+When **mail is configured** and the admin setting *"New accounts must confirm their email address"* is on (default), self-registered accounts get a confirmation link (valid 24 h, single use) and can only log in after clicking it. Without working mail, verification is not enforced, so a fresh install or a dev setup without SMTP keeps working.
+
+- Pending board invitations only turn into memberships once the address is verified, so nobody can claim someone else's invitations by registering their email.
+- Users can request a new link from the login page; the API answers the same for unknown addresses.
+- Admins see an "Unverified" badge in the user list and can verify an account manually.
+- Accounts created by the installer, and users that existed before this feature, count as verified.
 
 ## Security notes
 
@@ -102,7 +114,7 @@ All routes live under `api/`. Errors are `{ "error": "<code>", "details"?: {...}
 
 | Method | Route | |
 |---|---|---|
-| POST | `auth/register`, `auth/login`, `auth/refresh`, `auth/logout` | session |
+| POST | `auth/register`, `auth/login`, `auth/refresh`, `auth/logout`, `auth/verify-email`, `auth/resend-verification` | session |
 | GET/PATCH | `auth/me` · POST `auth/password` · GET `auth/config` | profile |
 | GET/POST | `boards` · GET/PATCH/DELETE `boards/{id}` | boards |
 | POST | `boards/{id}/columns` · PUT `boards/{id}/columns/order` · PATCH/DELETE `columns/{id}` | columns |
@@ -113,7 +125,7 @@ All routes live under `api/`. Errors are `{ "error": "<code>", "details"?: {...}
 ## Project layout
 
 ```
-backend/api/          PHP API (front controller index.php, src/Core, src/Services, src/Controllers)
+backend/api/          PHP API (front controller index.php, src/Core, src/Services, src/Controllers, migrations/)
 backend/install/      web installer + schema.sql
 frontend/             Angular app (src/app/core, features, layout, shared; public/i18n)
 deploy/htaccess       root .htaccess for the deployable build

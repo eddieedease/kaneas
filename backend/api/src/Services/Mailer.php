@@ -118,7 +118,7 @@ final class Mailer
 
         $headers = [
             'Date: ' . date(DATE_RFC2822),
-            'From: ' . ($fromName !== '' ? $this->encodeHeader($fromName) . ' ' : '') . '<' . $from . '>',
+            'From: ' . ($fromName !== '' ? $this->encodeName($fromName) . ' ' : '') . '<' . $from . '>',
             'To: <' . $to . '>',
             'Subject: ' . $this->encodeHeader($this->clean($subject)),
             'Message-ID: <' . bin2hex(random_bytes(12)) . '@' . $domain . '>',
@@ -174,9 +174,16 @@ final class Mailer
         return trim(str_replace(["\r", "\n"], '', $value));
     }
 
+    /** Unstructured header text (Subject): plain ASCII as-is, otherwise RFC 2047 encoded. */
     private function encodeHeader(string $value): string
     {
-        return preg_match('/[^\x20-\x7E]/', $value) ? '=?UTF-8?B?' . base64_encode($value) . '?=' : '"' . addcslashes($value, '"\\') . '"';
+        return preg_match('/[^\x20-\x7E]/', $value) ? '=?UTF-8?B?' . base64_encode($value) . '?=' : $value;
+    }
+
+    /** Display name in an address header (From): must be quoted when it is plain ASCII. */
+    private function encodeName(string $value): string
+    {
+        return preg_match('/[^\x20-\x7E]/', $value) ? $this->encodeHeader($value) : '"' . addcslashes($value, '"\\') . '"';
     }
 
     private function localHostname(): string

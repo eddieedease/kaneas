@@ -11,7 +11,9 @@ use Kaneas\Controllers\CardController;
 use Kaneas\Controllers\ColumnController;
 use Kaneas\Controllers\MemberController;
 use Kaneas\Core\Config;
+use Kaneas\Core\Database;
 use Kaneas\Core\HttpException;
+use Kaneas\Core\Migrator;
 use Kaneas\Core\Request;
 use Kaneas\Core\Response;
 use Kaneas\Core\Router;
@@ -27,6 +29,7 @@ final class App
                 throw new HttpException(503, 'not_installed');
             }
             Config::load();
+            Migrator::migrate(Database::get());
             $response = self::routes()->dispatch(Request::fromGlobals());
         } catch (HttpException $e) {
             $body = ['error' => $e->errorCode];
@@ -55,6 +58,8 @@ final class App
         $r->add('POST', 'auth/login', [AuthController::class, 'login'], Router::PUBLIC);
         $r->add('POST', 'auth/refresh', [AuthController::class, 'refresh'], Router::PUBLIC);
         $r->add('POST', 'auth/logout', [AuthController::class, 'logout'], Router::PUBLIC);
+        $r->add('POST', 'auth/verify-email', [AuthController::class, 'verifyEmail'], Router::PUBLIC);
+        $r->add('POST', 'auth/resend-verification', [AuthController::class, 'resendVerification'], Router::PUBLIC);
         $r->add('GET', 'auth/config', [AuthController::class, 'config'], Router::PUBLIC);
         $r->add('GET', 'auth/me', [AuthController::class, 'me']);
         $r->add('PATCH', 'auth/me', [AuthController::class, 'updateMe']);

@@ -53,6 +53,11 @@ final class Database
         return (bool) preg_match('/^[A-Za-z0-9_]{0,20}$/', $prefix);
     }
 
+    public function prefix(): string
+    {
+        return $this->prefix;
+    }
+
     public function sql(string $sql): string
     {
         return (string) preg_replace('/\{(\w+)\}/', '`' . $this->prefix . '$1`', $sql);

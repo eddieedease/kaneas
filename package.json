@@ -1,6 +1,6 @@
 {
   "name": "kaneas",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Collaborative kanban boards — Angular frontend, PHP/MySQL backend for shared hosting.",
   "engines": {

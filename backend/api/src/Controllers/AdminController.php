@@ -9,6 +9,7 @@ use Kaneas\Core\HttpException;
 use Kaneas\Core\Request;
 use Kaneas\Core\Response;
 use Kaneas\Core\Validator;
+use Kaneas\Services\EmailVerification;
 use Kaneas\Services\Mailer;
 use Kaneas\Services\MailTemplates;
 use Kaneas\Services\Settings;
@@ -16,24 +17,27 @@ use Kaneas\Services\TokenService;
 
 final class AdminController
 {
+    private const USER_FIELDS = 'u.id, u.email, u.name, u.role, u.locale, u.is_active, u.email_verified_at, u.last_login_at, u.created_at';
+
     public function users(Request $request): array
     {
         return Database::get()->all(
-            'SELECT u.id, u.email, u.name, u.role, u.locale, u.is_active, u.last_login_at, u.created_at,
+            'SELECT ' . self::USER_FIELDS . ',
                     (SELECT COUNT(*) FROM {boards} b WHERE b.owner_id = u.id) AS board_count
              FROM {users} u ORDER BY u.created_at DESC',
         );
     }
 
-    /** Body: { "role"?: "user"|"admin", "is_active"?: bool } */
+    /** Body: { "role"?: "user"|"admin", "is_active"?: bool, "email_verified"?: true } */
     public function updateUser(Request $request, array $params): array
     {
         $data = Validator::validate($request->all(), [
             'role' => 'in:user,admin',
             'is_active' => 'bool',
+            'email_verified' => 'bool',
         ]);
         $db = Database::get();
-        $target = $db->one('SELECT id, role, is_active FROM {users} WHERE id = ?', [$params['id']]);
+        $target = $db->one('SELECT id, email FROM {users} WHERE id = ?', [$params['id']]);
         if ($target === null) {
             throw HttpException::notFound();
         }
@@ -41,15 +45,21 @@ final class AdminController
             throw new HttpException(422, 'cannot_demote_self');
         }
 
-        if ($data) {
-            $sets = implode(', ', array_map(static fn ($k) => "$k = ?", array_keys($data)));
-            $values = array_map(static fn ($v) => is_bool($v) ? (int) $v : $v, array_values($data));
-            $db->query("UPDATE {users} SET $sets WHERE id = ?", [...$values, $params['id']]);
-            if (($data['is_active'] ?? true) === false) {
-                TokenService::revokeAllForUser($params['id']);
+        $db->transaction(static function (Database $db) use ($data, $params, $target): void {
+            if (($data['email_verified'] ?? false) === true) {
+                EmailVerification::markVerified($db, $params['id'], $target['email']);
             }
+            unset($data['email_verified']);
+            if ($data) {
+                $sets = implode(', ', array_map(static fn ($k) => "$k = ?", array_keys($data)));
+                $values = array_map(static fn ($v) => is_bool($v) ? (int) $v : $v, array_values($data));
+                $db->query("UPDATE {users} SET $sets WHERE id = ?", [...$values, $params['id']]);
+            }
+        });
+        if (($data['is_active'] ?? true) === false) {
+            TokenService::revokeAllForUser($params['id']);
         }
-        return $db->one('SELECT id, email, name, role, locale, is_active, last_login_at, created_at FROM {users} WHERE id = ?', [$params['id']]);
+        return $db->one('SELECT ' . self::USER_FIELDS . ' FROM {users} u WHERE u.id = ?', [$params['id']]);
     }
 
     public function deleteUser(Request $request, array $params): Response
@@ -68,14 +78,22 @@ final class AdminController
 
     public function settings(Request $request): array
     {
-        return ['allow_registration' => Settings::allowRegistration()];
+        return [
+            'allow_registration' => Settings::allowRegistration(),
+            'require_email_verification' => Settings::requireEmailVerification(),
+            // Verification is only enforced once mail works.
+            'mail_configured' => Mailer::fromSettings()->isConfigured(),
+        ];
     }
 
     public function updateSettings(Request $request): array
     {
-        $data = Validator::validate($request->all(), ['allow_registration' => 'bool']);
-        if (array_key_exists('allow_registration', $data)) {
-            Settings::set('allow_registration', $data['allow_registration']);
+        $data = Validator::validate($request->all(), [
+            'allow_registration' => 'bool',
+            'require_email_verification' => 'bool',
+        ]);
+        foreach ($data as $name => $value) {
+            Settings::set($name, $value);
         }
         return $this->settings($request);
     }

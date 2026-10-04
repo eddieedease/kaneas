@@ -5,10 +5,11 @@ import { TranslatePipe } from '@ngx-translate/core';
 import { TranslatedError, apiError } from '../../core/api/api-error';
 import { AuthService } from '../../core/auth/auth.service';
 import { FieldErrors } from '../../shared/field-errors';
+import { ResendVerification } from './resend-verification';
 
 @Component({
   selector: 'app-login-page',
-  imports: [FormField, RouterLink, TranslatePipe, FieldErrors],
+  imports: [FormField, RouterLink, TranslatePipe, FieldErrors, ResendVerification],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <form class="card space-y-4" (submit)="onSubmit($event)" novalidate>
@@ -19,6 +20,9 @@ import { FieldErrors } from '../../shared/field-errors';
       }
       @if (error(); as err) {
         <p class="alert-error" role="alert">{{ err.key | translate: err.params }}</p>
+        @if (err.key === 'errors.email_not_verified') {
+          <app-resend-verification [email]="model().email" />
+        }
       }
 
       <div>

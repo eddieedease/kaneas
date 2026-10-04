@@ -10,6 +10,7 @@ export const routes: Routes = [
     children: [
       { path: 'login', title: 'Kaneas', loadComponent: () => import('./features/auth/login.page').then((m) => m.LoginPage) },
       { path: 'register', title: 'Kaneas', loadComponent: () => import('./features/auth/register.page').then((m) => m.RegisterPage) },
+      { path: 'verify-email', title: 'Kaneas', loadComponent: () => import('./features/auth/verify-email.page').then((m) => m.VerifyEmailPage) },
     ],
   },
   {

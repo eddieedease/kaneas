@@ -4,7 +4,7 @@ import { switchMap, throwError, catchError } from 'rxjs';
 import { AuthService } from './auth.service';
 
 /** Auth endpoints that must never trigger a token refresh/retry loop. */
-const SESSION_ENDPOINTS = /^api\/auth\/(login|register|refresh|logout)$/;
+const SESSION_ENDPOINTS = /^api\/auth\/(login|register|refresh|logout|verify-email|resend-verification)$/;
 
 /**
  * Adds the bearer token to API calls. On a 401 it refreshes the session once and retries;
